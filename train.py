@@ -189,9 +189,9 @@ def main():
                         help='whether to use SBD dataset (default: True)')
     parser.add_argument('--workers', type=int, default=4,
                         metavar='N', help='dataloader threads')
-    parser.add_argument('--base-size', type=int, default=513,
+    parser.add_argument('--base-size', type=int, default=257,
                         help='base image size')
-    parser.add_argument('--crop-size', type=int, default=513,
+    parser.add_argument('--crop-size', type=int, default=257,
                         help='crop image size')
     parser.add_argument('--sync-bn', type=bool, default=None,
                         help='whether to use sync bn (default: auto)')
