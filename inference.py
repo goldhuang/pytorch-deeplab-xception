@@ -3,7 +3,7 @@ import numpy as np
 import tqdm
 import torch
 import config
-
+import torch.nn.functional as F
 
 from PIL import Image, ImageOps, ImageFilter
 from modeling.deeplab import *
@@ -78,7 +78,7 @@ class Tester(object):
             width = test_array.shape[1]
             height = test_array.shape[0]
 
-            inference_imgs = np.zeros((height, width), dtype=np.float32)
+            inference_imgs = np.zeros((1280, 1918), dtype=np.float32)
             # count = 0
             # for i in range(height):
             #     for j in range(width):
@@ -90,30 +90,17 @@ class Tester(object):
 
             with torch.no_grad():
                 output = self.model(test_tensor)
-            pred = output.data.cpu().numpy()
-            pred = np.argmax(pred, axis=1)
-            # print(pred.shape)
-            inference_imgs[:,:] = pred[0][:, :]*255
+            print(output.shape)
+            output = F.softmax(output, dim=1)
+            print(output.shape)
+            output = F.interpolate(output, size=(1280, 1918), mode='bilinear')
+            print(output.shape)
+            inference_imgs[:,:] = output[0][1][:, :]*255
 
             print('inference ... {}/{}'.format(idx + 1, len(os.listdir(DATA_DIR))))
             # gray mode
             save_image = Image.fromarray(inference_imgs.astype('uint8'))
-
-            save_image = save_image.resize((1918, 1280), Image.BILINEAR)
-            #save_image = save_image.filter(ImageFilter.GaussianBlur(radius=1))
             save_image.save(os.path.join(SAVE_DIR, test_file))
-
-            # raw = np.array(save_image).astype(np.float32)
-            #
-            # r = 8
-            # eps = 0.05
-
-            # cat_smoothed = guided_filter(raw, raw, r, eps)
-            # cat_smoothed_s4 = guided_filter(raw, raw, r, eps, s=4)
-            # imageio.imwrite('cat_smoothed.png', cat_smoothed)
-            # imageio.imwrite('cat_smoothed_s4.png', cat_smoothed_s4)
-
-            # Image.fromarray(cat_smoothed_s4.astype('uint8')).save(os.path.join(SAVE_DIR, test_file))
 
 def main():
     tester = Tester()
