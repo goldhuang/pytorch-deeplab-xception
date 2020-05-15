@@ -13,7 +13,7 @@ import config
 
 
 class CarvanaTrainDataset(Dataset):
-    def __init__(self, mode, folds=10, fold_num=0, transform=None):
+    def __init__(self, mode, folds, fold_num, transform=None):
         assert mode in {'train', 'valid'}
         self.mode = mode
         self.transform = transform
@@ -29,6 +29,10 @@ class CarvanaTrainDataset(Dataset):
             else valid_index
         self.files = files
 
+        # print ('Carvana Train')
+        # print (files[train_index])
+        # print('Carvana Val')
+        # print (files[valid_index])
         # Display stats
         print('Number of images in {}: {:d}'.format(self.mode, len(self.dataset_index)))
 

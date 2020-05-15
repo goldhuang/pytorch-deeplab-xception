@@ -7,6 +7,7 @@ from imgaug import augmenters as iaa
 import numpy as np
 import torch
 import torchvision
+import random
 
 
 class Compose:
@@ -119,6 +120,22 @@ class Resize(CustomTransform):
     def transform(self, image):
         return cv2.resize(image, self.output_size)
 
+class ResizeByNearest(CustomTransform):
+    def __init__(self, output_size):
+        self.output_size = output_size
+
+    def transform(self, image):
+        return cv2.resize(image, self.output_size, interpolation=cv2.INTER_NEAREST)
+
+class RandomGausianBlur(CustomTransform):
+    def __init__(self, output_size):
+        self.output_size = output_size
+
+    def transform(self, image):
+        if random.random() < 0.5:
+            return cv2.GaussianBlur(image,(1,1),cv2.BORDER_DEFAULT)
+        else:
+            return image
 
 class Lambda(CustomTransform):
     def __init__(self, func):

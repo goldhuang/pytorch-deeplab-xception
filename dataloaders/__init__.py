@@ -40,10 +40,15 @@ def make_data_loader(args, **kwargs):
         return train_loader, val_loader, test_loader, num_class
 
     elif args.dataset == 'carvana':
+        dataset_params = {
+            'folds': args.folds,
+            'fold_num': args.fold,
+
+        }
         transform_train = make_augmentation_transform('crop_fliplr_affine_color')
         transform_valid = make_augmentation_transform('crop_fliplr')
-        train_set = dataset.CarvanaTrainDataset(mode='train', transform=transform_train)
-        val_set = dataset.CarvanaTrainDataset(mode='valid', transform=transform_valid)
+        train_set = dataset.CarvanaTrainDataset(**dataset_params, mode='train', transform=transform_train)
+        val_set = dataset.CarvanaTrainDataset(**dataset_params, mode='valid', transform=transform_valid)
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **kwargs)
         val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, **kwargs)
         test_loader = None

@@ -1,6 +1,7 @@
 import argparse
 import os
 import numpy as np
+import random
 from tqdm import tqdm
 
 from mypath import Path
@@ -13,6 +14,8 @@ from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
 from utils.metrics import Evaluator
+
+import config
 
 class Trainer(object):
     def __init__(self, args):
@@ -214,6 +217,8 @@ def main():
                                 testing (default: auto)')
     parser.add_argument('--use-balanced-weights', action='store_true', default=False,
                         help='whether to use balanced weights (default: False)')
+    parser.add_argument('--folds', type=int, default=10)
+    parser.add_argument('--fold', type=int, default=0)
     # optimizer params
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (default: auto)')
@@ -226,14 +231,12 @@ def main():
                         metavar='M', help='w-decay (default: 5e-4)')
     parser.add_argument('--nesterov', action='store_true', default=False,
                         help='whether use nesterov (default: False)')
-    # cuda, seed and logging
+    # cuda and logging
     parser.add_argument('--no-cuda', action='store_true', default=
                         False, help='disables CUDA training')
     parser.add_argument('--gpu-ids', type=str, default='0',
                         help='use which gpu to train, must be a \
                         comma-separated list of integers only (default=0)')
-    parser.add_argument('--seed', type=int, default=1, metavar='S',
-                        help='random seed (default: 1)')
     # checking point
     parser.add_argument('--resume', type=str, default=None,
                         help='put the path to resuming file if needed')
@@ -268,6 +271,7 @@ def main():
             'coco': 30,
             'cityscapes': 200,
             'pascal': 50,
+            'carvana': 100,
         }
         args.epochs = epoches[args.dataset.lower()]
 
@@ -282,6 +286,7 @@ def main():
             'coco': 0.1,
             'cityscapes': 0.01,
             'pascal': 0.007,
+            'carvana': 0.001
         }
         args.lr = lrs[args.dataset.lower()] / (4 * len(args.gpu_ids)) * args.batch_size
 
@@ -289,7 +294,12 @@ def main():
     if args.checkname is None:
         args.checkname = 'deeplab-'+str(args.backbone)
     print(args)
-    torch.manual_seed(args.seed)
+
+    random.seed(config.SEED)
+    np.random.seed(config.SEED)
+    torch.manual_seed(config.SEED)
+    torch.cuda.manual_seed(config.SEED)
+
     trainer = Trainer(args)
     print('Starting Epoch:', trainer.args.start_epoch)
     print('Total Epoches:', trainer.args.epochs)

@@ -9,10 +9,10 @@ TRAIN_IMAGES_HQ_PATH = data_path('train_hq')
 TRAIN_MASKS_PATH = data_path('train_masks')
 TEST_IMAGES_PATH = data_path('test_hq')
 SAMPLE_SUBMISSION_PATH = data_path('sample_submission.csv')
-# SUBMISSIONS_PATH = '../submissions'
-# SAVE_MODEL_PATH = '../saved_models'
-# PREDICTIONS_PATH = '../predictions'
-# VALID_PREDICTIONS_PATH = '../valid_predictions'
+SUBMISSIONS_PATH = 'submissions'
+SAVE_MODEL_PATH = 'run/carvana/resnet'
+PREDICTIONS_PATH = 'predictions'
+VALID_PREDICTIONS_PATH = 'valid_predictions'
 
 
 NUM_WORKERS = 4

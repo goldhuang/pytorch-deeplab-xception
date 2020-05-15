@@ -16,6 +16,7 @@ augmentations = {
     ),
     'crop_fliplr_affine_color': (
         t.RandomCrop.Both(original_size=(1918, 1280), crop_size=(1024, 1024)),
+        t.Resize.Both((257, 257)),
         t.ExpandDims.Mask(axis=2),
         t.ImgAug.Both(iaa.Fliplr(0.5)),
         t.ImgAug.Both(
@@ -38,16 +39,13 @@ augmentations = {
             ]),
             p=0.25
         ),
-        t.Resize.Both((257, 257)),
-        t.ExpandDims.Mask(axis=2),
         t.Clip.Image(),
     ),
     'crop_fliplr': (
         t.RandomCrop.Both(original_size=(1918, 1280), crop_size=(1024, 1024)),
-        t.ExpandDims.Mask(axis=2),
-        t.ImgAug.Both(iaa.Fliplr(0.5)),
         t.Resize.Both((257, 257)),
         t.ExpandDims.Mask(axis=2),
+        t.ImgAug.Both(iaa.Fliplr(0.5)),
     ),
     'pad_fliplr_affine_color': (
         t.Pad.Both(size=(0, 0, 1, 1)),

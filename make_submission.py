@@ -48,8 +48,8 @@ def main(dirname, threshold, submission_filename):
         for i, fold_dir in enumerate(fold_dirs):
             img_file = os.path.join(predictions_parent_dir, fold_dir, filename)
             flip_lr_img_file = os.path.join(predictions_parent_dir, fold_dir,
-                                            filename.replace('.png',
-                                                             '_flip_lr.png'))
+                                            filename.replace('.jpg',
+                                                             '_flip_lr.jpg'))
             predictions[i * 2] = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
             predictions[i * 2 + 1] = np.fliplr(
                 cv2.imread(flip_lr_img_file, cv2.IMREAD_UNCHANGED))
