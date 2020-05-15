@@ -1,1 +1,1 @@
-python train.py --backbone mobilenet --lr 0.00007 --use-sbd True --epochs 50 --batch-size 16 --checkname deeplab-resnet --eval-interval 1 --dataset pascal --resume run/pascal/resnet/experiment_0/checkpoint.pth.tar
+python train.py --lr 0.0007 --epochs 100 --batch-size 16 --checkname deeplab-resnet --eval-interval 1 --dataset carvana

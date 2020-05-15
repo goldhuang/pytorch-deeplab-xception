@@ -1,5 +1,7 @@
 from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd
 from torch.utils.data import DataLoader
+import dataset
+from augmentation import make_augmentation_transform
 
 def make_data_loader(args, **kwargs):
 
@@ -37,6 +39,16 @@ def make_data_loader(args, **kwargs):
         test_loader = None
         return train_loader, val_loader, test_loader, num_class
 
-    else:
+    elif args.dataset == 'carvana':
+        transform_train = make_augmentation_transform('crop_fliplr_affine_color')
+        transform_valid = make_augmentation_transform('crop_fliplr')
+        train_set = dataset.CarvanaTrainDataset(mode='train', transform=transform_train)
+        val_set = dataset.CarvanaTrainDataset(mode='valid', transform=transform_valid)
+        train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **kwargs)
+        val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, **kwargs)
+        test_loader = None
+        return train_loader, val_loader, test_loader, 2
+
+    else :
         raise NotImplementedError
 

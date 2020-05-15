@@ -27,6 +27,9 @@ def decode_segmap(label_mask, dataset, plot=False):
     elif dataset == 'cityscapes':
         n_classes = 19
         label_colours = get_cityscapes_labels()
+    elif dataset == 'carvana':
+        n_classes = 2
+        label_colours = get_carvana_labels()
     else:
         raise NotImplementedError
 
@@ -64,6 +67,8 @@ def encode_segmap(mask):
     label_mask = label_mask.astype(int)
     return label_mask
 
+def get_carvana_labels():
+    return np.array([[0,0,0], [255,255,255]])
 
 def get_cityscapes_labels():
     return np.array([
