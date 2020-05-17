@@ -108,3 +108,4 @@ venv.bak/
 dataset/*
 predictions/
 submission.csv
+*.csv

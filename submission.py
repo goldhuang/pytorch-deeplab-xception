@@ -7,8 +7,6 @@ import torch.nn.functional as F
 
 from modeling.deeplab import *
 from dataloaders import utils
-from dataset import CarvanaTestDataset
-from torch.utils.data import DataLoader
 
 from PIL import Image
 

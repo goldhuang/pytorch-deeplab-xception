@@ -1,7 +1,7 @@
 from dataloaders.datasets import cityscapes, coco, combine_dbs, pascal, sbd
 from torch.utils.data import DataLoader
-import dataset
-from augmentation import make_augmentation_transform
+from carvana import dataset
+from carvana.augmentation import make_augmentation_transform
 
 def make_data_loader(args, **kwargs):
 

@@ -4,7 +4,7 @@ import numpy as np
 import random
 from tqdm import tqdm
 
-from mypath import Path
+from config import Path
 from dataloaders import make_data_loader
 from modeling.sync_batchnorm.replicate import patch_replication_callback
 from modeling.deeplab import *

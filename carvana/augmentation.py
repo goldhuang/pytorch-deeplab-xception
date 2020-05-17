@@ -3,8 +3,7 @@
 from imgaug import augmenters as iaa
 
 import config
-import custom_transforms as t
-
+from carvana import custom_transforms as t
 
 augmentations = {
     'pad': (

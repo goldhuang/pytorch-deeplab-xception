@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-from mypath import Path
+from config import Path
 from tqdm import trange
 import os
 from pycocotools.coco import COCO
