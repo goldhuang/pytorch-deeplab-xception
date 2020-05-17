@@ -9,10 +9,6 @@ from PIL import Image, ImageOps, ImageFilter
 from modeling.deeplab import *
 from dataloaders import utils, make_data_loader
 from utils.metrics import Evaluator
-from torchvision import transforms
-from dataloaders import custom_transforms as tr
-
-from gf import guided_filter
 
 class Tester(object):
     def __init__(self):
@@ -69,7 +65,6 @@ class Tester(object):
             test_img = test_img.resize((self.cropsize, self.cropsize), Image.BILINEAR)
             test_array = np.array(test_img).astype(np.float32)
             # print(test_array.shape)
-            #image_id, extension = test_file.split('.')[0], test_file.split('.')[-1]
 
             # Normalize
             test_array /= 255.0
@@ -79,10 +74,7 @@ class Tester(object):
             height = test_array.shape[0]
 
             inference_imgs = np.zeros((1280, 1918), dtype=np.float32)
-            # count = 0
-            # for i in range(height):
-            #     for j in range(width):
-            #         print(test_array.shape)
+
             test_array = test_array.transpose((2, 0, 1))
             # print(test_array.shape)
             test_array_batch = np.expand_dims(test_array, axis=0)
@@ -90,11 +82,11 @@ class Tester(object):
 
             with torch.no_grad():
                 output = self.model(test_tensor)
-            print(output.shape)
+            # print(output.shape)
             output = F.softmax(output, dim=1)
-            print(output.shape)
+            # print(output.shape)
             output = F.interpolate(output, size=(1280, 1918), mode='bilinear')
-            print(output.shape)
+            # print(output.shape)
             inference_imgs[:,:] = output[0][1][:, :]*255
 
             print('inference ... {}/{}'.format(idx + 1, len(os.listdir(DATA_DIR))))
