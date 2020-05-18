@@ -14,8 +14,7 @@ augmentations = {
         t.RandomCrop.Both(original_size=(1918, 1280), crop_size=(1024, 1024)),
     ),
     'crop_fliplr_affine_color': (
-        t.RandomCrop.Both(original_size=(1918, 1280), crop_size=(1024, 1024)),
-        t.Resize.Both((257, 257)),
+        t.RandomCrop.Both(original_size=(1918, 1280), crop_size=(config.INPUT_SIZE, config.INPUT_SIZE)),
         t.ExpandDims.Mask(axis=2),
         t.ImgAug.Both(iaa.Fliplr(0.5)),
         t.ImgAug.Both(
@@ -41,8 +40,7 @@ augmentations = {
         t.Clip.Image(),
     ),
     'crop_fliplr': (
-        t.RandomCrop.Both(original_size=(1918, 1280), crop_size=(1024, 1024)),
-        t.Resize.Both((257, 257)),
+        t.RandomCrop.Both(original_size=(1918, 1280), crop_size=(config.INPUT_SIZE, config.INPUT_SIZE)),
         t.ExpandDims.Mask(axis=2),
         t.ImgAug.Both(iaa.Fliplr(0.5)),
     ),
