@@ -22,6 +22,11 @@ class Evaluator(object):
         MIoU = np.nanmean(MIoU)
         return MIoU
 
+    def Dice(self):
+        Dice = np.diag(self.confusion_matrix) * 2 / (np.sum(self.confusion_matrix, axis=1) + np.sum(self.confusion_matrix, axis=0))
+        Dice = np.nanmean(Dice)
+        return Dice
+
     def Frequency_Weighted_Intersection_over_Union(self):
         freq = np.sum(self.confusion_matrix, axis=1) / np.sum(self.confusion_matrix)
         iu = np.diag(self.confusion_matrix) / (
