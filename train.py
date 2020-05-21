@@ -39,12 +39,8 @@ class Trainer(object):
                         sync_bn=args.sync_bn,
                         freeze_bn=args.freeze_bn)
 
-        train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr},
-                        {'params': model.get_10x_lr_params(), 'lr': args.lr * 10}]
-
         # Define Optimizer
-        optimizer = torch.optim.SGD(train_params, momentum=args.momentum,
-                                    weight_decay=args.weight_decay, nesterov=args.nesterov)
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
         # Define Criterion
         # whether to use class balanced weights
@@ -62,9 +58,6 @@ class Trainer(object):
         
         # Define Evaluator
         self.evaluator = Evaluator(self.nclass)
-        # Define lr scheduler
-        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,
-                                            args.epochs, len(self.train_loader))
 
         # Using cuda
         if args.cuda:
@@ -102,7 +95,6 @@ class Trainer(object):
             image, target = sample['image'], sample['label']
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
-            self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
             output = self.model(image)
             # print(output.shape, target.shape)
@@ -120,7 +112,7 @@ class Trainer(object):
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
-        print('Loss: %.3f' % train_loss)
+        print('Loss: %.3f Prev best pred: %.4f' % (train_loss, self.best_pred))
 
         if self.args.no_val:
             # save checkpoint every epoch
@@ -180,13 +172,15 @@ class Trainer(object):
                 'best_pred': self.best_pred,
             }, is_best)
 
+        print('Best Pred %.5f' % self.best_pred)
+
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
     parser.add_argument('--out-stride', type=int, default=16,
-                        help='network output stride (default: 8)')
+                        help='network output stride (default: 16)')
     parser.add_argument('--dataset', type=str, default='pascal',
                         choices=['pascal', 'coco', 'cityscapes', 'carvana'],
                         help='dataset name (default: pascal)')
@@ -223,8 +217,8 @@ def main():
     # optimizer params
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (default: auto)')
-    parser.add_argument('--lr-scheduler', type=str, default='poly',
-                        choices=['poly', 'step', 'cos'],
+    parser.add_argument('--lr-scheduler', type=str, default='adam',
+                        choices=['poly', 'step', 'cos', 'adam'],
                         help='lr scheduler mode: (default: poly)')
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')

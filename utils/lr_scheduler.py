@@ -41,18 +41,27 @@ class LR_Scheduler(object):
         self.warmup_iters = warmup_epochs * iters_per_epoch
 
     def __call__(self, optimizer, i, epoch, best_pred):
-        T = epoch * self.iters_per_epoch + i
-        if self.mode == 'cos':
-            lr = 0.5 * self.lr * (1 + math.cos(1.0 * T / self.N * math.pi))
-        elif self.mode == 'poly':
-            lr = self.lr * pow((1 - 1.0 * T / self.N), 0.9)
-        elif self.mode == 'step':
-            lr = self.lr * (0.1 ** (epoch // self.lr_step))
-        else:
-            raise NotImplemented
-        # warm up lr schedule
-        if self.warmup_iters > 0 and T < self.warmup_iters:
-            lr = lr * 1.0 * T / self.warmup_iters
+        if self.mode == 'adam':
+            if epoch < 10:
+                lr = 0.007
+            if epoch >= 10 and epoch <= 20:
+                lr = 0.0007
+            if epoch >= 21 and epoch <= 40:
+                lr = 0.00007
+        else :
+            T = epoch * self.iters_per_epoch + i
+            if self.mode == 'cos':
+                lr = 0.5 * self.lr * (1 + math.cos(1.0 * T / self.N * math.pi))
+            elif self.mode == 'poly':
+                lr = self.lr * pow((1 - 1.0 * T / self.N), 0.9)
+            elif self.mode == 'step':
+                lr = self.lr * (0.1 ** (epoch // self.lr_step))
+            else:
+                raise NotImplemented
+            # warm up lr schedule
+            if self.warmup_iters > 0 and T < self.warmup_iters:
+                lr = lr * 1.0 * T / self.warmup_iters
+
         if epoch > self.epoch:
             print('\n=>Epoches %i, learning rate = %.3E, \
                 previous best = %.4f' % (epoch, lr, best_pred))
