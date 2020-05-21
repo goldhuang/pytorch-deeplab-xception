@@ -169,7 +169,7 @@ class Trainer(object):
         print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}, Dice: {}".format(Acc, Acc_class, mIoU, FWIoU, Dice))
         print('Loss: %.3f' % test_loss)
 
-        new_pred = mIoU
+        new_pred = Dice
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred
