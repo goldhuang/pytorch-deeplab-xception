@@ -43,11 +43,7 @@ class LR_Scheduler(object):
     def __call__(self, optimizer, i, epoch, best_pred):
         if self.mode == 'adam':
             if epoch < 10:
-                lr = 0.007
-            if epoch >= 10 and epoch <= 20:
-                lr = 0.0007
-            if epoch >= 21 and epoch <= 40:
-                lr = 0.00007
+                return
         else :
             T = epoch * self.iters_per_epoch + i
             if self.mode == 'cos':

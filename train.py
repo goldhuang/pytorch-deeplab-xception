@@ -146,20 +146,21 @@ class Trainer(object):
             self.evaluator.add_batch(target, pred)
 
         # Fast test during the training
-        Acc = self.evaluator.Pixel_Accuracy()
-        Acc_class = self.evaluator.Pixel_Accuracy_Class()
-        mIoU = self.evaluator.Mean_Intersection_over_Union()
+        #Acc = self.evaluator.Pixel_Accuracy()
+        #Acc_class = self.evaluator.Pixel_Accuracy_Class()
+        #mIoU = self.evaluator.Mean_Intersection_over_Union()
         Dice = self.evaluator.Dice()
-        FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
-        self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
-        self.writer.add_scalar('val/mIoU', mIoU, epoch)
-        self.writer.add_scalar('val/Acc', Acc, epoch)
-        self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
-        self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
+        #FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
+        #self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
+        #self.writer.add_scalar('val/mIoU', mIoU, epoch)
+        #self.writer.add_scalar('val/Acc', Acc, epoch)
+        #self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
+        #self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
+        self.writer.add_scalar('val/Dice', Dice, epoch)
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
-        print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}, Dice: {}".format(Acc, Acc_class, mIoU, FWIoU, Dice))
-        print('Loss: %.3f' % test_loss)
+        #print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}, Dice: {}".format(Acc, Acc_class, mIoU, FWIoU, Dice))
+        print('Loss: %.3f Dice: %.6f' % (test_loss, Dice))
 
         new_pred = Dice
         if new_pred > self.best_pred:
@@ -186,7 +187,7 @@ def main():
                         help='dataset name (default: pascal)')
     parser.add_argument('--use-sbd', action='store_true', default=True,
                         help='whether to use SBD dataset (default: True)')
-    parser.add_argument('--workers', type=int, default=4,
+    parser.add_argument('--workers', type=int, default=2,
                         metavar='N', help='dataloader threads')
     parser.add_argument('--base-size', type=int, default=config.INPUT_SIZE,
                         help='base image size')
