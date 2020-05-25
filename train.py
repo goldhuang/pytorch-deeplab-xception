@@ -13,7 +13,6 @@ from utils.calculate_weights import calculate_weigths_labels
 from utils.lr_scheduler import LR_Scheduler
 from utils.saver import Saver
 from utils.summaries import TensorboardSummary
-from utils.metrics import Evaluator
 
 import config
 
@@ -39,8 +38,10 @@ class Trainer(object):
                         sync_bn=args.sync_bn,
                         freeze_bn=args.freeze_bn)
 
-        # Define Optimizer
-        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+        #train_params = [{'params': model.get_1x_lr_params(), 'lr': args.lr}, {'params': model.get_10x_lr_params(), 'lr': args.lr*10}]
+        #optimizer = torch.optim.SGD(train_params, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+
+        optimizer = torch.optim.SGD(params=model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
 
         # Define Criterion
         # whether to use class balanced weights
@@ -55,10 +56,10 @@ class Trainer(object):
             weight = None
         self.criterion = SegmentationLosses(weight=weight, cuda=args.cuda).build_loss(mode=args.loss_type)
         self.model, self.optimizer = model, optimizer
-        
-        # Define Evaluator
-        self.evaluator = Evaluator(self.nclass)
 
+        # Define lr scheduler
+        self.scheduler = LR_Scheduler(args.lr_scheduler, args.lr,
+                                            args.epochs, len(self.train_loader))
         # Using cuda
         if args.cuda:
             self.model = torch.nn.DataParallel(self.model, device_ids=self.args.gpu_ids)
@@ -88,21 +89,29 @@ class Trainer(object):
 
     def training(self, epoch):
         train_loss = 0.0
+
         self.model.train()
+
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
+
+        self.model.half()
+
         for i, sample in enumerate(tbar):
             image, target = sample['image'], sample['label']
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
+
+            self.scheduler(self.optimizer, i, epoch, self.best_pred)
             self.optimizer.zero_grad()
-            output = self.model(image)
+            output = self.model(image.half()).float()
             # print(output.shape, target.shape)
             loss = self.criterion(output, target)
             loss.backward()
+
             self.optimizer.step()
             train_loss += loss.item()
-            tbar.set_description('Train loss: %.3f' % (train_loss / (i + 1)))
+            tbar.set_description('Train loss: %.6f' % (train_loss / (i + 1)))
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
 
             # Show 10 * 3 inference results each epoch
@@ -110,9 +119,11 @@ class Trainer(object):
                 global_step = i + num_img_tr * epoch
                 self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
 
+        self.model.float()
+
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
-        print('Loss: %.3f Prev best pred: %.4f' % (train_loss, self.best_pred))
+        print('Loss: %.6f Prev best pred: %.6f' % (train_loss, self.best_pred))
 
         if self.args.no_val:
             # save checkpoint every epoch
@@ -124,12 +135,21 @@ class Trainer(object):
                 'best_pred': self.best_pred,
             }, is_best)
 
+    def Dice(self, gt, pred):
+        s1 = pred.sum()
+        s2 = gt.sum()
+        s3 = (pred*gt).sum()
+
+        if s1 + s2 == 0:
+            return 1.0
+        else:
+            return 2.0 * s3 / (s1 + s2)
 
     def validation(self, epoch):
         self.model.eval()
-        self.evaluator.reset()
         tbar = tqdm(self.val_loader, desc='\r')
         test_loss = 0.0
+        dice = 0
         for i, sample in enumerate(tbar):
             image, target = sample['image'], sample['label']
             if self.args.cuda:
@@ -138,31 +158,26 @@ class Trainer(object):
                 output = self.model(image)
             loss = self.criterion(output, target)
             test_loss += loss.item()
-            tbar.set_description('Test loss: %.3f' % (test_loss / (i + 1)))
-            pred = output.data.cpu().numpy()
-            target = target.cpu().numpy()
-            pred = np.argmax(pred, axis=1)
-            # Add batch sample into evaluator
-            self.evaluator.add_batch(target, pred)
+            tbar.set_description('Test loss: %.6f' % (test_loss / (i + 1)))
 
-        # Fast test during the training
-        #Acc = self.evaluator.Pixel_Accuracy()
-        #Acc_class = self.evaluator.Pixel_Accuracy_Class()
-        #mIoU = self.evaluator.Mean_Intersection_over_Union()
-        Dice = self.evaluator.Dice()
-        #FWIoU = self.evaluator.Frequency_Weighted_Intersection_over_Union()
-        #self.writer.add_scalar('val/total_loss_epoch', test_loss, epoch)
-        #self.writer.add_scalar('val/mIoU', mIoU, epoch)
-        #self.writer.add_scalar('val/Acc', Acc, epoch)
-        #self.writer.add_scalar('val/Acc_class', Acc_class, epoch)
-        #self.writer.add_scalar('val/fwIoU', FWIoU, epoch)
-        self.writer.add_scalar('val/Dice', Dice, epoch)
+            output = F.softmax(output, dim=1)
+            #output = F.interpolate(output, size=(1280, 1918), mode='bilinear', align_corners=False)
+            output = output.cpu().numpy()[0][1]
+            output = output > 0.5
+            target = target.cpu().numpy().squeeze()
+
+            assert target.shape == output.shape
+
+            dice += self.Dice(target, output)
+        dice /= tbar.total
+
+        self.writer.add_scalar('val/Dice', dice, epoch)
         print('Validation:')
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         #print("Acc:{}, Acc_class:{}, mIoU:{}, fwIoU: {}, Dice: {}".format(Acc, Acc_class, mIoU, FWIoU, Dice))
-        print('Loss: %.3f Dice: %.6f' % (test_loss, Dice))
+        print('Loss: %.6f Dice: %.6f' % (test_loss, dice))
 
-        new_pred = Dice
+        new_pred = dice
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred
@@ -218,8 +233,8 @@ def main():
     # optimizer params
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (default: auto)')
-    parser.add_argument('--lr-scheduler', type=str, default='adam',
-                        choices=['poly', 'step', 'cos', 'adam'],
+    parser.add_argument('--lr-scheduler', type=str, default='poly',
+                        choices=['poly', 'step', 'cos'],
                         help='lr scheduler mode: (default: poly)')
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')

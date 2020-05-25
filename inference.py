@@ -8,7 +8,6 @@ import torch.nn.functional as F
 from PIL import Image, ImageOps, ImageFilter
 from modeling.deeplab import *
 from dataloaders import utils, make_data_loader
-from utils.metrics import Evaluator
 
 class Tester(object):
     def __init__(self):
@@ -31,7 +30,6 @@ class Tester(object):
         device = torch.device('cpu')
         checkpoint = torch.load(path, map_location=device)
         self.model.load_state_dict(checkpoint['state_dict'])
-        self.evaluator = Evaluator(self.nclass)
 
     def save_image(self, array, id, op):
         text = 'gt'
@@ -53,7 +51,6 @@ class Tester(object):
 
     def inference(self):
         self.model.eval()
-        self.evaluator.reset()
 
         DATA_DIR = config.TEST_IMAGES_PATH
         SAVE_DIR = config.PREDICTIONS_PATH
