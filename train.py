@@ -136,14 +136,10 @@ class Trainer(object):
             }, is_best)
 
     def Dice(self, gt, pred):
-        s1 = pred.sum()
-        s2 = gt.sum()
-        s3 = (pred*gt).sum()
+        intersection = (pred * gt).sum()
+        union = pred.sum() + gt.sum() + 1e-15
 
-        if s1 + s2 == 0:
-            return 1.0
-        else:
-            return 2.0 * s3 / (s1 + s2)
+        return 2 * intersection.float() / union.float()
 
     def validation(self, epoch):
         self.model.eval()
@@ -160,12 +156,17 @@ class Trainer(object):
             test_loss += loss.item()
             tbar.set_description('Test loss: %.6f' % (test_loss / (i + 1)))
 
-            output = F.softmax(output, dim=1)
-            #output = F.interpolate(output, size=(1280, 1918), mode='bilinear', align_corners=False)
-            output = output.cpu().numpy()[0][1]
-            output = output > 0.5
-            target = target.cpu().numpy().squeeze()
+            # output = F.softmax(output, dim=1)
+            # #output = F.interpolate(output, size=(1280, 1918), mode='bilinear', align_corners=False)
+            # output = output.cpu().numpy()[0][1]
+            # output = output > 0.5
+            # target = target.cpu().numpy().squeeze()
 
+            target = target.cpu().numpy().squeeze()
+            output = output.data.cpu().numpy()
+            output = np.argmax(output, axis=1).squeeze()
+
+            # print(output.shape)
             assert target.shape == output.shape
 
             dice += self.Dice(target, output)
@@ -212,9 +213,9 @@ def main():
                         help='whether to use sync bn (default: auto)')
     parser.add_argument('--freeze-bn', type=bool, default=False,
                         help='whether to freeze bn parameters (default: False)')
-    parser.add_argument('--loss-type', type=str, default='ce',
-                        choices=['ce', 'focal'],
-                        help='loss func type (default: ce)')
+    parser.add_argument('--loss-type', type=str, default='dice',
+                        choices=['ce', 'focal', 'dice'],
+                        help='loss func type (default: dice)')
     # training hyper params
     parser.add_argument('--epochs', type=int, default=None, metavar='N',
                         help='number of epochs to train (default: auto)')
@@ -233,8 +234,8 @@ def main():
     # optimizer params
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (default: auto)')
-    parser.add_argument('--lr-scheduler', type=str, default='poly',
-                        choices=['poly', 'step', 'cos'],
+    parser.add_argument('--lr-scheduler', type=str, default='adam',
+                        choices=['poly', 'step', 'cos', 'adam'],
                         help='lr scheduler mode: (default: poly)')
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')

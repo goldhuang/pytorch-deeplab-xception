@@ -66,10 +66,11 @@ class LR_Scheduler(object):
         self._adjust_learning_rate(optimizer, lr)
 
     def _adjust_learning_rate(self, optimizer, lr):
-        if len(optimizer.param_groups) == 1:
-            optimizer.param_groups[0]['lr'] = lr
+        if len(optimizer.param_groups) > 1:
+            for i, param_group in enumerate(optimizer.param_groups):
+                if i == 0:
+                    param_group['lr'] = lr * 0.1
+                else:
+                    param_group['lr'] = lr
         else:
-            # enlarge the lr at the head
             optimizer.param_groups[0]['lr'] = lr
-            for i in range(1, len(optimizer.param_groups)):
-                optimizer.param_groups[i]['lr'] = lr * 10

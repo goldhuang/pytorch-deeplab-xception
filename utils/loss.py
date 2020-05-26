@@ -8,19 +8,20 @@ class SegmentationLosses(object):
         self.batch_average = batch_average
         self.cuda = cuda
 
-    def build_loss(self, mode='ce'):
+    def build_loss(self, mode='dice'):
         """Choices: ['ce' or 'focal']"""
         if mode == 'ce':
             return self.CrossEntropyLoss
         elif mode == 'focal':
             return self.FocalLoss
+        elif mode == 'dice':
+            return self.DiceLoss
         else:
             raise NotImplementedError
 
     def CrossEntropyLoss(self, logit, target):
         n, c, h, w = logit.size()
-        criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=self.ignore_index,
-                                        reduction='mean')
+        criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=self.ignore_index, reduction='mean')
         if self.cuda:
             criterion = criterion.cuda()
 
@@ -28,6 +29,26 @@ class SegmentationLosses(object):
 
         if self.batch_average:
             loss /= n
+
+        return loss
+
+    def DiceLoss(self, logit, target):
+        n, c, h, w = logit.size()
+        criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=self.ignore_index, reduction='mean')
+        if self.cuda:
+            criterion = criterion.cuda()
+
+        loss = criterion(logit, target.long())
+
+        eps = 1e-15
+        dice_target = target
+        dice_output = torch.softmax(logit.float(), dim=1)
+        dice_output = dice_output[:,1,:,:] > 0.5
+
+        intersection = (dice_output * dice_target).sum()
+        union = dice_output.sum() + dice_target.sum() + eps
+
+        loss -= torch.log(2 * intersection.float() / union.float())
 
         return loss
 
