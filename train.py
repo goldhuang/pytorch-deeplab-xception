@@ -139,7 +139,7 @@ class Trainer(object):
         intersection = (pred * gt).sum()
         union = pred.sum() + gt.sum() + 1e-15
 
-        return 2 * intersection.float() / union.float()
+        return 2.0 * intersection / union
 
     def validation(self, epoch):
         self.model.eval()
