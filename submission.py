@@ -12,9 +12,8 @@ from PIL import Image
 
 class Tester(object):
     def __init__(self):
-        #path = 'run/carvana/resnet/experiment_1/checkpoint.pth.tar'
-        path = 'run/carvana/resnet/model_best_1.pth.tar'
-        self.cropsize = 257
+        path = 'run/carvana/half-fold2/model_best.pth.tar'
+        self.cropsize = config.INPUT_SIZE
         if not os.path.isfile(path):
             raise RuntimeError("no checkpoint found at '{}'".format(path))
         self.color_map = utils.get_carvana_labels()

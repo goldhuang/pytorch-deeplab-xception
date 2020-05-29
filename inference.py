@@ -8,13 +8,12 @@ import torch.nn.functional as F
 from PIL import Image, ImageOps, ImageFilter
 from modeling.deeplab import *
 from dataloaders import utils, make_data_loader
-from utils.metrics import Evaluator
 
 class Tester(object):
     def __init__(self):
         #path = 'run/carvana/resnet/experiment_1/checkpoint.pth.tar'
         path = 'run/carvana/resnet/model_best_1.pth.tar'
-        self.cropsize = 257
+        self.cropsize = config.INPUT_SIZE
         if not os.path.isfile(path):
             raise RuntimeError("no checkpoint found at '{}'".format(path))
         self.color_map = utils.get_carvana_labels()
@@ -31,7 +30,6 @@ class Tester(object):
         device = torch.device('cpu')
         checkpoint = torch.load(path, map_location=device)
         self.model.load_state_dict(checkpoint['state_dict'])
-        self.evaluator = Evaluator(self.nclass)
 
     def save_image(self, array, id, op):
         text = 'gt'
@@ -53,7 +51,6 @@ class Tester(object):
 
     def inference(self):
         self.model.eval()
-        self.evaluator.reset()
 
         DATA_DIR = config.TEST_IMAGES_PATH
         SAVE_DIR = config.PREDICTIONS_PATH

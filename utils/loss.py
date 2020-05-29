@@ -2,26 +2,26 @@ import torch
 import torch.nn as nn
 
 class SegmentationLosses(object):
-    def __init__(self, weight=None, size_average=True, batch_average=True, ignore_index=255, cuda=False):
+    def __init__(self, weight=None, batch_average=True, ignore_index=255, cuda=False):
         self.ignore_index = ignore_index
         self.weight = weight
-        self.size_average = size_average
         self.batch_average = batch_average
         self.cuda = cuda
 
-    def build_loss(self, mode='ce'):
+    def build_loss(self, mode='dice'):
         """Choices: ['ce' or 'focal']"""
         if mode == 'ce':
             return self.CrossEntropyLoss
         elif mode == 'focal':
             return self.FocalLoss
+        elif mode == 'dice':
+            return self.DiceLoss
         else:
             raise NotImplementedError
 
     def CrossEntropyLoss(self, logit, target):
         n, c, h, w = logit.size()
-        criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=self.ignore_index,
-                                        size_average=self.size_average)
+        criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=self.ignore_index, reduction='mean')
         if self.cuda:
             criterion = criterion.cuda()
 
@@ -32,10 +32,30 @@ class SegmentationLosses(object):
 
         return loss
 
+    def DiceLoss(self, logit, target):
+        n, c, h, w = logit.size()
+        criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=self.ignore_index, reduction='mean')
+        if self.cuda:
+            criterion = criterion.cuda()
+
+        loss = criterion(logit, target.long())
+
+        eps = 1e-15
+        dice_target = target
+        dice_output = torch.softmax(logit.float(), dim=1)
+        dice_output = dice_output[:,1,:,:] > 0.5
+
+        intersection = (dice_output * dice_target).sum()
+        union = dice_output.sum() + dice_target.sum() + eps
+
+        loss -= torch.log(2 * intersection.float() / union.float())
+
+        return loss
+
     def FocalLoss(self, logit, target, gamma=2, alpha=0.5):
         n, c, h, w = logit.size()
         criterion = nn.CrossEntropyLoss(weight=self.weight, ignore_index=self.ignore_index,
-                                        size_average=self.size_average)
+                                        reduction='mean')
         if self.cuda:
             criterion = criterion.cuda()
 

@@ -50,7 +50,7 @@ def make_data_loader(args, **kwargs):
         train_set = dataset.CarvanaTrainDataset(**dataset_params, mode='train', transform=transform_train)
         val_set = dataset.CarvanaTrainDataset(**dataset_params, mode='valid', transform=transform_valid)
         train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, **kwargs)
-        val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, **kwargs)
+        val_loader = DataLoader(val_set, batch_size=1, shuffle=False, **kwargs)
         test_loader = None
         return train_loader, val_loader, test_loader, 2
 
