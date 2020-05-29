@@ -20,6 +20,9 @@ class Trainer(object):
     def __init__(self, args):
         self.args = args
 
+        self.prev_pred = 0.0
+        self.bad_count = 0
+
         # Define Saver
         self.saver = Saver(args)
         self.saver.save_experiment_config()
@@ -42,6 +45,7 @@ class Trainer(object):
         #optimizer = torch.optim.SGD(train_params, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
 
         optimizer = torch.optim.SGD(params=model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay, nesterov=args.nesterov)
+        #optimizer = torch.optim.Adam(params=model.parameters(), lr=args.lr)
 
         # Define Criterion
         # whether to use class balanced weights
@@ -102,7 +106,10 @@ class Trainer(object):
             if self.args.cuda:
                 image, target = image.cuda(), target.cuda()
 
-            self.scheduler(self.optimizer, i, epoch, self.best_pred)
+            self.scheduler(self.optimizer, i, epoch, self.bad_count)
+            if self.bad_count >= 2:
+                self.bad_count = 0
+
             self.optimizer.zero_grad()
             output = self.model(image.half()).float()
             # print(output.shape, target.shape)
@@ -113,6 +120,7 @@ class Trainer(object):
             train_loss += loss.item()
             tbar.set_description('Train loss: %.6f' % (train_loss / (i + 1)))
             self.writer.add_scalar('train/total_loss_iter', loss.item(), i + num_img_tr * epoch)
+            self.writer.add_scalar('train/lr', self.scheduler.lr, epoch)
 
             # Show 10 * 3 inference results each epoch
             if i % (num_img_tr // 10) == 0:
@@ -122,6 +130,7 @@ class Trainer(object):
         self.model.float()
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
+
         print('[Epoch: %d, numImages: %5d]' % (epoch, i * self.args.batch_size + image.data.shape[0]))
         print('Loss: %.6f Prev best pred: %.6f' % (train_loss, self.best_pred))
 
@@ -179,6 +188,13 @@ class Trainer(object):
         print('Loss: %.6f Dice: %.6f' % (test_loss, dice))
 
         new_pred = dice
+
+        if new_pred <= self.prev_pred:
+            self.bad_count += 1
+        else:
+            self.bad_count = 0
+        self.prev_pred = new_pred
+
         if new_pred > self.best_pred:
             is_best = True
             self.best_pred = new_pred
@@ -234,8 +250,8 @@ def main():
     # optimizer params
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (default: auto)')
-    parser.add_argument('--lr-scheduler', type=str, default='adam',
-                        choices=['poly', 'step', 'cos', 'adam'],
+    parser.add_argument('--lr-scheduler', type=str, default='custom',
+                        choices=['poly', 'step', 'cos', 'adam', 'custom'],
                         help='lr scheduler mode: (default: poly)')
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')

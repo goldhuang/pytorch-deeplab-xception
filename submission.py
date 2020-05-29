@@ -12,7 +12,7 @@ from PIL import Image
 
 class Tester(object):
     def __init__(self):
-        path = 'run/carvana/fold2/model_best.pth.tar'
+        path = 'run/carvana/half-fold2/model_best.pth.tar'
         self.cropsize = config.INPUT_SIZE
         if not os.path.isfile(path):
             raise RuntimeError("no checkpoint found at '{}'".format(path))
