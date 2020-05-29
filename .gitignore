@@ -109,3 +109,4 @@ dataset/*
 predictions/
 submission.csv
 *.csv
+*.7z
