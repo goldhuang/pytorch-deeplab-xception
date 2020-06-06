@@ -13,6 +13,8 @@ from PIL import Image
 class Tester(object):
     def __init__(self):
         path = 'run/carvana/half-fold4/model_best.pth.tar'
+        path1 = 'run/carvana/half-fold2-new/model_best.pth.tar'
+
         self.cropsize = config.INPUT_SIZE
         if not os.path.isfile(path):
             raise RuntimeError("no checkpoint found at '{}'".format(path))
@@ -20,16 +22,23 @@ class Tester(object):
         self.nclass = 2
 
         # Define model
-        model = DeepLab(num_classes=self.nclass,
+        model0 = DeepLab(num_classes=self.nclass,
                         backbone='resnet',
                         output_stride=16,
                         sync_bn=False,
                         freeze_bn=False)
+        self.model0 = model0.cuda()
+        checkpoint0 = torch.load(path)
+        self.model0.load_state_dict(checkpoint0['state_dict'])
 
-        self.model = model.cuda()
-        checkpoint = torch.load(path)
-        self.model.load_state_dict(checkpoint['state_dict'])
-        #self.evaluator = Evaluator(self.nclass)
+        model1 = DeepLab(num_classes=self.nclass,
+                         backbone='resnet',
+                         output_stride=16,
+                         sync_bn=False,
+                         freeze_bn=False)
+        self.model1 = model1.cuda()
+        checkpoint1 = torch.load(path1)
+        self.model1.load_state_dict(checkpoint1['state_dict'])
 
     def save_image(self, array, id, op):
         file_name = id
@@ -58,8 +67,8 @@ class Tester(object):
         return ' '.join(str(x) for x in runs)
 
     def inference(self):
-        self.model.eval()
-        #self.evaluator.reset()
+        self.model0.eval()
+        self.model1.eval()
 
         with torch.no_grad():
             DATA_DIR = config.TEST_IMAGES_PATH
@@ -82,13 +91,18 @@ class Tester(object):
                     test_array_batch = np.expand_dims(test_array, axis=0)
                     test_tensor = torch.from_numpy(test_array_batch).cuda()
 
-                    output = self.model(test_tensor)
-                    output = F.softmax(output, dim=1)
-                    output = F.interpolate(output, size=(1280, 1918), mode='bilinear', align_corners=True)
-                    output = output.cpu().numpy()[0][1]
-                    output = output > 0.5
+                    output0 = self.model0(test_tensor)
+                    output0 = F.softmax(output0, dim=1)
 
-                    rle = self.rle_encode(output)
+                    output1 = self.model1(test_tensor)
+                    output1 = F.softmax(output1, dim=1)
+
+                    output_final = 0.5 * (output0 + output1)
+                    output_final = F.interpolate(output_final, size=(1280, 1918), mode='bilinear', align_corners=True)
+                    output_final = output_final.cpu().numpy()[0][1]
+                    output_final = output_final > 0.5
+
+                    rle = self.rle_encode(output_final)
                     submission_csv.write('{},{}\n'.format(
                         test_file, ' '.join(map(str, rle))))
                     print('inference ... {}/{}'.format(idx + 1, len(os.listdir(DATA_DIR))))

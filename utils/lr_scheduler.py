@@ -52,8 +52,16 @@ class LR_Scheduler(object):
             if bad_count >= 2:
                 self.lr *= 0.5
             lr = self.lr
-        # elif self.mode == 'cyclic':
-        #
+        elif self.mode == 'cyclic':
+            i = epoch % 10
+            i = i // 2
+            if i == 0 or i == 4:
+                lr = 1e-6
+            elif i == 1 or i == 3:
+                lr = 1e-5
+            else:
+                lr = 1e-4
+            self.lr = lr
         else :
             T = epoch * self.iters_per_epoch + i
             if self.mode == 'cos':

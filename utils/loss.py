@@ -48,7 +48,7 @@ class SegmentationLosses(object):
         intersection = (dice_output * dice_target).sum()
         union = dice_output.sum() + dice_target.sum() + eps
 
-        loss -= torch.log(2 * intersection.float() / union.float())
+        loss -= 2 * torch.log(2 * intersection.float() / union.float())
 
         return loss
 
