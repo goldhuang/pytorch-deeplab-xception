@@ -20,6 +20,8 @@ class Trainer(object):
     def __init__(self, args):
         self.args = args
 
+        self.half = args.half
+
         self.prev_pred = 0.0
         self.bad_count = 0
 
@@ -99,7 +101,8 @@ class Trainer(object):
         tbar = tqdm(self.train_loader)
         num_img_tr = len(self.train_loader)
 
-        self.model.half()
+        if self.half:
+            self.model.half()
 
         for i, sample in enumerate(tbar):
             image, target = sample['image'], sample['label']
@@ -111,7 +114,11 @@ class Trainer(object):
                 self.bad_count = 0
 
             self.optimizer.zero_grad()
-            output = self.model(image.half()).float()
+            if self.half:
+                output = self.model(image.half()).float()
+            else:
+                output = self.model(image)
+
             # print(output.shape, target.shape)
             loss = self.criterion(output, target)
             loss.backward()
@@ -127,7 +134,8 @@ class Trainer(object):
                 global_step = i + num_img_tr * epoch
                 self.summary.visualize_image(self.writer, self.args.dataset, image, target, output, global_step)
 
-        self.model.float()
+        if self.half:
+            self.model.float()
 
         self.writer.add_scalar('train/total_loss_epoch', train_loss, epoch)
 
@@ -209,6 +217,9 @@ class Trainer(object):
 
 def main():
     parser = argparse.ArgumentParser(description="PyTorch DeeplabV3Plus Training")
+    parser.add_argument('--half', type=bool, default=True,
+                        help='whether to train in half (default: False)')
+
     parser.add_argument('--backbone', type=str, default='resnet',
                         choices=['resnet', 'xception', 'drn', 'mobilenet'],
                         help='backbone name (default: resnet)')
@@ -217,7 +228,7 @@ def main():
     parser.add_argument('--dataset', type=str, default='pascal',
                         choices=['pascal', 'coco', 'cityscapes', 'carvana'],
                         help='dataset name (default: pascal)')
-    parser.add_argument('--use-sbd', action='store_true', default=True,
+    parser.add_argument('--use-sbd', type=bool, default=True,
                         help='whether to use SBD dataset (default: True)')
     parser.add_argument('--workers', type=int, default=2,
                         metavar='N', help='dataloader threads')
@@ -250,8 +261,8 @@ def main():
     # optimizer params
     parser.add_argument('--lr', type=float, default=None, metavar='LR',
                         help='learning rate (default: auto)')
-    parser.add_argument('--lr-scheduler', type=str, default='custom',
-                        choices=['poly', 'step', 'cos', 'adam', 'custom'],
+    parser.add_argument('--lr-scheduler', type=str, default='poly',
+                        choices=['poly', 'step', 'cos', 'adam', 'custom', 'cyclic'],
                         help='lr scheduler mode: (default: poly)')
     parser.add_argument('--momentum', type=float, default=0.9,
                         metavar='M', help='momentum (default: 0.9)')
